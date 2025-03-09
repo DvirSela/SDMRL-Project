@@ -22,7 +22,7 @@
 In this project, we test various reinforcement learning (RL) techniques on a simulated environment of a electricity market. We begin by describing the properties and dynamics of our simulation environment, and then we explain our RL methods, such as Soft Actor-Critic (SAC) and our novel Transformer Actor-Critic (TAC). Overall, we find that both the SAC and TAC perform about as well as one another, but relatively well overall relative to a random baseline and also relative to a heuristic-based baseline.
 
 # Running the code
-Each following sections should be run in the order we describe. The running is splitted into 2 parts - training and evaluation. To change any Hyper-Parameters, just edit the provided `.env` file. 
+Each following sections should be run in the order we describe. The running is splitted into 2 parts - training and evaluation. To change any hyper-parameters, just edit the provided `.env` file. 
 
 ## Training
 This is the main part of the code, which will train the SAC and TAC agents. The releavant Hyper-Parameters in the `.env` are:

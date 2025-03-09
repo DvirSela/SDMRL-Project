@@ -8,6 +8,9 @@ from collections import deque
 import random
 from ElectricityMarketEnv import ElectricityMarketEnv
 import pickle
+from dotenv import load_dotenv
+import os
+load_dotenv()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def flatten_state(state):
@@ -263,13 +266,14 @@ def train():
     Train the SAC agent on the ElectricityMarketEnv environment.
     """
     # Hyperparameters.
-    num_episodes = 10        # total training episodes
-    max_steps = 1000         # steps per episode (as in your environment)
-    history_length = 10          # length of the state history fed into the transformer
-    batch_size = 64 # batch size for training
-    replay_buffer_capacity = 100000
-    state_dim = 6                 # flattened state dimension (soc, demand, price, renewable, season, time)
-    action_dim = 1
+    num_episodes = int(os.getenv("NUM_EPISODES", 10)) # total training episodes
+    max_steps = int(os.getenv("NUM_STEPS", 10000)) # max steps per episode
+    history_length = int(os.getenv("HISTORY_LENGTH", 10)) # number of previous states to consider
+    batch_size = int(os.getenv("TAC_BATCH_SIZE", 64)) # batch size for training
+    replay_buffer_capacity = int(os.getenv("REPLAY_BUFFER_CAPACITY", 1000000)) # capacity of the replay buffer
+
+    state_dim = 6                 #  (soc, demand, price, renewable, season, time)
+    action_dim = 1                #  (battery action)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"model will be saved at ./steps_{max_steps}/sac_agent_final.pth")
     # Create your custom environment (make sure ElectricityMarketEnv is imported/defined).
@@ -371,7 +375,6 @@ def load_model(agent, filename="sac_agent.pth"):
     agent.actor_optimizer.load_state_dict(checkpoint['actor_optimizer_state_dict'])
     agent.critic_optimizer.load_state_dict(checkpoint['critic_optimizer_state_dict'])
     agent.alpha_optimizer.load_state_dict(checkpoint['alpha_optimizer_state_dict'])
-    # Update the log_alpha parameter.
     agent.log_alpha.data.copy_(checkpoint['log_alpha'].data)
     print(f"Model loaded from {filename}")
 

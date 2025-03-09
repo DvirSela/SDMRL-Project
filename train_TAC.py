@@ -10,6 +10,8 @@ from helpers.ElectricityMarketEnv import ElectricityMarketEnv
 import pickle
 from dotenv import load_dotenv
 import os
+import pickle
+from tqdm import tqdm
 load_dotenv()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

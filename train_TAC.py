@@ -6,16 +6,27 @@ import torch.nn.functional as F
 import gymnasium as gym
 from collections import deque
 import random
-from tqdm import tqdm
 from ElectricityMarketEnv import ElectricityMarketEnv
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# --- Helper function to flatten the state ---
+
 def flatten_state(state):
+    """
+Flatten the state dictionary into a single array.
+
+    Args:
+        state (dict): The state dictionary containing keys 'soc', 'demand', 'price', 'renewable', 'season', and 'time'.
+
+    Returns:
+        np.ndarray: A flattened array containing all the state information.
+    """
     keys = ['soc', 'demand', 'price', 'renewable', 'season', 'time']
     return np.concatenate([state[key].flatten() for key in keys], axis=-1)
 
 # --- Replay Buffer that stores sequences ---
 class ReplayBuffer:
+    """
+    A simple FIFO experience replay buffer for storing sequences of states.
+    """
     def __init__(self, capacity, history_length, state_dim):
         self.capacity = capacity
         self.buffer = []
@@ -47,7 +58,7 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
 
-# --- Transformer-based state encoder ---
+
 class TransformerStateEncoder(nn.Module):
     def __init__(self, input_dim, d_model, history_length, nhead, num_layers, dropout=0.1):
         super(TransformerStateEncoder, self).__init__()
@@ -114,7 +125,7 @@ class QNetwork(nn.Module):
         q_value = self.fc(x)
         return q_value
 
-# --- SAC Agent with Transformer-based encoder ---
+
 class SACAgent:
     def __init__(self, state_dim, action_dim, history_length, d_model=64, nhead=4, num_layers=2,
                  actor_lr=3e-4, critic_lr=3e-4, alpha_lr=3e-4, gamma=0.99, tau=0.005, device=device):
@@ -124,7 +135,7 @@ class SACAgent:
         self.tau = tau
         self.device = device
         
-        # Actor network and its transformer encoder.
+        # Actor network and its transformer encoder
         self.actor_encoder = TransformerStateEncoder(input_dim=state_dim, d_model=d_model,
                                                        history_length=history_length, nhead=nhead, num_layers=num_layers).to(device)
         self.actor = Actor(self.actor_encoder, d_model, action_dim).to(device)
@@ -138,7 +149,7 @@ class SACAgent:
                                                          history_length=history_length, nhead=nhead, num_layers=num_layers).to(device)
         self.critic2 = QNetwork(self.critic_encoder2, d_model, action_dim).to(device)
         
-        # Target networks for critics.
+        # Target networks for critics
         self.target_critic_encoder1 = TransformerStateEncoder(input_dim=state_dim, d_model=d_model,
                                                                 history_length=history_length, nhead=nhead, num_layers=num_layers).to(device)
         self.target_critic1 = QNetwork(self.target_critic_encoder1, d_model, action_dim).to(device)
@@ -146,7 +157,6 @@ class SACAgent:
                                                                 history_length=history_length, nhead=nhead, num_layers=num_layers).to(device)
         self.target_critic2 = QNetwork(self.target_critic_encoder2, d_model, action_dim).to(device)
         
-        # Copy weights from critics to targets.
         self.target_critic_encoder1.load_state_dict(self.critic_encoder1.state_dict())
         self.target_critic1.load_state_dict(self.critic1.state_dict())
         self.target_critic_encoder2.load_state_dict(self.critic_encoder2.state_dict())
@@ -165,7 +175,6 @@ class SACAgent:
         self.target_entropy = -action_dim
 
     def select_action(self, state_seq, evaluate=False):
-        # Convert state sequence to a torch tensor of shape (1, history_length, state_dim).
         state_seq = torch.FloatTensor(state_seq).unsqueeze(0).to(self.device)
         mean, log_std = self.actor(state_seq)
         std = log_std.exp()
@@ -175,7 +184,7 @@ class SACAgent:
             # Reparameterization trick.
             normal = torch.distributions.Normal(mean, std)
             x_t = normal.rsample()
-            # Use tanh to bound the action.
+
             action = torch.tanh(x_t)
         return action.cpu().detach().numpy()[0]
 
@@ -247,13 +256,16 @@ class SACAgent:
         for param, target_param in zip(encoder.parameters(), target_encoder.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-# --- Main Training Loop ---
+
 def train():
+    """
+    Train the SAC agent on the ElectricityMarketEnv environment.
+    """
     # Hyperparameters.
-    num_episodes = 10           # total training episodes
-    max_steps = 24 * 365          # steps per episode (as in your environment)
-    history_length = 10           # length of the state history fed into the transformer
-    batch_size = 64
+    num_episodes = 10         # total training episodes
+    max_steps = 8760         # steps per episode (as in your environment)
+    history_length = 10          # length of the state history fed into the transformer
+    batch_size = 64 # batch size for training
     replay_buffer_capacity = 100000
     state_dim = 6                 # flattened state dimension (soc, demand, price, renewable, season, time)
     action_dim = 1
@@ -279,7 +291,7 @@ def train():
             if step % 100 == 0:
                 print(f"Episode: {episode}, Step: {step}, Reward: {episode_reward}")
             # Prepare current state sequence.
-            state_seq = np.array(state_history)  # shape: (history_length, state_dim)
+            state_seq = np.array(state_history) 
             # Select action using the actor network.
             action = agent.select_action(state_seq)
             next_obs, reward, done, truncated, info = env.step(action)
@@ -304,10 +316,16 @@ def train():
         
         print(f"Episode: {episode}, Reward: {episode_reward}")
         # Save the model every episode.
-        save_model(agent, filename=f"sac_agent_episode_{episode}.pth")
+        save_model(agent, filename=f"./steps_{max_steps}/sac_agent_episode_{episode}.pth")
     # Save the final model.
-    save_model(agent, filename="sac_agent_final.pth")
+    save_model(agent, filename="./steps_{max_steps}/sac_agent_final.pth")
 def save_model(agent, filename="sac_agent.pth"):
+    """
+    Save the model parameters to a file.
+    Args:
+        agent (SACAgent): The SAC agent whose model parameters will be saved.
+        filename (str): The path to the file where the model parameters will be saved. Default is "sac_agent.pth".
+    """
     checkpoint = {
         'actor_state_dict': agent.actor.state_dict(),
         'actor_encoder_state_dict': agent.actor_encoder.state_dict(),
@@ -327,7 +345,14 @@ def save_model(agent, filename="sac_agent.pth"):
     torch.save(checkpoint, filename)
     print(f"Model saved to {filename}")
 
-def load_model(agent, filename):
+def load_model(agent, filename="sac_agent.pth"):
+    """
+    Load the model parameters from a file.
+
+    Args:
+        agent (SACAgent): The SAC agent to load the model into.
+        filename (str): The path to the file containing the model parameters. Default is "sac_agent.pth".
+    """
     checkpoint = torch.load(filename, map_location=agent.device)
     agent.actor.load_state_dict(checkpoint['actor_state_dict'])
     agent.actor_encoder.load_state_dict(checkpoint['actor_encoder_state_dict'])
@@ -346,59 +371,6 @@ def load_model(agent, filename):
     agent.log_alpha.data.copy_(checkpoint['log_alpha'].data)
     print(f"Model loaded from {filename}")
 
-# --- Evaluation Function ---
-def evaluate(agent, num_episodes=5, max_steps=24*365):
-    """
-    Evaluate the current agent on the environment for a given number of episodes.
-    Uses the deterministic policy (mean action) for evaluation.
-    """
-
-    episodes = {
-    'rewards': [],
-    'battery_used_in_demand': [],
-    'sold': [],
-    'penalty': [] 
-    }
-
-
-    per_episode = {
-        'rewards': [],
-        'battery_used_in_demand': [],
-        'sold': [],
-        'penalty': [] 
-    }
-    for episode in tqdm(range(num_episodes)):
-        env = ElectricityMarketEnv()
-        obs, _ = env.reset()
-        state = flatten_state(obs)
-        rewards = []
-        # Initialize the state history with the initial state.
-        state_history = deque([state.copy() for _ in range(agent.history_length)], maxlen=agent.history_length)
-        episode_reward = 0
-        for step in range(max_steps):
-            # Prepare the state sequence.
-            state_seq = np.array(state_history)
-            # Use evaluate=True to select the mean action.
-            action = agent.select_action(state_seq, evaluate=True)
-            next_obs, reward, done, truncated, info = env.step(action)
-            for key in episodes.keys():
-                to_append = info[key]
-                if isinstance(to_append, np.ndarray):
-                    to_append = to_append[0]
-                per_episode[key].append(to_append)
-            next_state = flatten_state(next_obs)
-            state_history.append(next_state)
-            episode_reward += reward
-            if done:
-                break
-        # print(f"Evaluation Episode {episode}: Reward = {episode_reward}")
-        for key in episodes.keys():
-            episodes[key].append(per_episode[key])
-            per_episode[key] = []
-        rewards.append(episode_reward)
-    avg_reward = sum(rewards) / len(rewards)
-    print(f"Average Evaluation Reward: {avg_reward}")
-    return episodes['rewards'], episodes['battery_used_in_demand'], episodes['sold'], episodes['penalty']
 if __name__ == "__main__":
     print(f'device: {device}')
     train()

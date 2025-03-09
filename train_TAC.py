@@ -266,7 +266,7 @@ def train():
     action_dim = 1                #  (battery action)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"model will be saved at ./steps_{max_steps}/tac_agent_final.pth")
-    # Create your custom environment (make sure ElectricityMarketEnv is imported/defined).
+    # Create your custom environment
     env = ElectricityMarketEnv()
     
     # Initialize replay buffer.
@@ -279,23 +279,25 @@ def train():
     for episode in range(num_episodes):
         obs, _ = env.reset()
         state = flatten_state(obs)
-        # Initialize the history with the first state repeated.
+
         state_history = deque([state.copy() for _ in range(history_length)], maxlen=history_length)
         episode_reward = 0
         
         for step in range(max_steps):
             if step % 100 == 0:
                 print(f"Episode: {episode}, Step: {step}, Reward: {episode_reward}")
-            # Prepare current state sequence.
+
             state_seq = np.array(state_history) 
-            # Select action using the actor network.
+
             action = agent.select_action(state_seq)
             next_obs, reward, done, truncated, info = env.step(action)
             next_state = flatten_state(next_obs)
+
             # Create the next state sequence.
             next_state_history = state_history.copy()
             next_state_history.append(next_state)
             next_state_seq = np.array(next_state_history)
+
             # Store transition in the replay buffer.
             replay_buffer.push(state_seq, action, reward, next_state_seq, done)
             
@@ -303,7 +305,7 @@ def train():
             state = next_state
             episode_reward += reward
             
-            # Update agent if enough data is available.
+
             if len(replay_buffer) > batch_size:
                 critic_loss, actor_loss, alpha_loss = agent.update(replay_buffer, batch_size)
             
@@ -400,7 +402,7 @@ def evaluate(agent, num_episodes=5, max_steps=24*365):
         for step in range(max_steps):
             # Prepare the state sequence.
             state_seq = np.array(state_history)
-            # Use evaluate=True to select the mean action.
+
             action = agent.select_action(state_seq, evaluate=True)
             next_obs, reward, done, truncated, info = env.step(action)
             for key in episodes.keys():

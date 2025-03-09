@@ -39,5 +39,5 @@ This is the main part of the code, which will train the SAC and TAC agents. The 
 
 In order to train the models, just run [train_SAC.py](train_SAC.py) for the SAC and [train_TAC.py](train_TAC.py) for the TAC.
 ## Evaluating
-This is the part of the code that runs the evaluations and visualiztions.
-- The notebook for plotting the T-SNE is [TSNE.ipynb](Databricks%20Code/TSNE.ipynb)
+This is the part of the code that runs the evaluations and visualiztions. The releavant Hyper-Parameters in the `.env` and are the same as before. 
+All the needed visualiztions and evaluations that were in our report + extra are located in the [evaluations.py](evaluations.py) notebook. Make sure you run the training before you submit.

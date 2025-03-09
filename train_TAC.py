@@ -118,7 +118,7 @@ class QNetwork(nn.Module):
         return q_value
 
 
-class SACAgent:
+class TACAgent:
     def __init__(self, state_dim, action_dim, history_length, d_model=64, nhead=4, num_layers=2,
                  actor_lr=3e-4, critic_lr=3e-4, alpha_lr=3e-4, gamma=0.99, tau=0.005, device=device):
         self.history_length = history_length
@@ -230,7 +230,7 @@ class SACAgent:
         actor_loss.backward()
         self.actor_optimizer.step()
         
-        # Temperature (alpha) update
+
         alpha_loss = -(self.log_alpha.exp() * (log_prob + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
@@ -251,7 +251,7 @@ class SACAgent:
 
 def train():
     """
-    Train the SAC agent on the ElectricityMarketEnv environment.
+    Train the TAC agent on the ElectricityMarketEnv environment.
     """
     # Hyperparameters.
     num_episodes = int(os.getenv("NUM_EPISODES", 10)) # total training episodes
@@ -263,15 +263,14 @@ def train():
     state_dim = 6                 #  (soc, demand, price, renewable, season, time)
     action_dim = 1                #  (battery action)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"model will be saved at ./steps_{max_steps}/sac_agent_final.pth")
+    print(f"model will be saved at ./steps_{max_steps}/tac_agent_final.pth")
     # Create your custom environment (make sure ElectricityMarketEnv is imported/defined).
     env = ElectricityMarketEnv()
     
     # Initialize replay buffer.
     replay_buffer = ReplayBuffer(replay_buffer_capacity, history_length, state_dim)
     
-    # Initialize SAC agent.
-    agent = SACAgent(state_dim, action_dim, history_length, device=device)
+    agent = TACAgent(state_dim, action_dim, history_length, device=device)
     reward_per_episode = dict()
     if not os.path.exists(f"./models/steps_{max_steps}"):
         os.makedirs(f"./models/steps_{max_steps}")
@@ -312,17 +311,17 @@ def train():
         print(f"Episode: {episode}, Reward: {episode_reward}")
         reward_per_episode[episode] = episode_reward
         # Save the model every episode.
-        save_model(agent, filename=f"./models/steps_{max_steps}/sac_agent_episode_{episode}.pth")
+        save_model(agent, filename=f"./models/steps_{max_steps}/tac_agent_episode_{episode}.pth")
         with open(f"./steps_{max_steps}/reward_per_episode.pkl", "wb") as f:
             pickle.dump(reward_per_episode, f)
     # Save the final model.
-    save_model(agent, filename=f"./models/steps_{max_steps}/sac_agent_final.pth")
-def save_model(agent, filename="sac_agent.pth"):
+    save_model(agent, filename=f"./models/steps_{max_steps}/tac_agent_final.pth")
+def save_model(agent, filename="tac_agent.pth"):
     """
     Save the model parameters to a file.
     Args:
-        agent (SACAgent): The SAC agent whose model parameters will be saved.
-        filename (str): The path to the file where the model parameters will be saved. Default is "sac_agent.pth".
+        agent (TACAgent): The TAC agent whose model parameters will be saved.
+        filename (str): The path to the file where the model parameters will be saved. Default is "tac_agent.pth".
     """
     checkpoint = {
         'actor_state_dict': agent.actor.state_dict(),
@@ -343,13 +342,13 @@ def save_model(agent, filename="sac_agent.pth"):
     torch.save(checkpoint, filename)
     print(f"Model saved to {filename}")
 
-def load_model(agent, filename="sac_agent.pth"):
+def load_model(agent, filename="tac_agent.pth"):
     """
     Load the model parameters from a file.
 
     Args:
-        agent (SACAgent): The SAC agent to load the model into.
-        filename (str): The path to the file containing the model parameters. Default is "sac_agent.pth".
+        agent (TACAgent): The TAC agent to load the model into.
+        filename (str): The path to the file containing the model parameters. Default is "tac_agent.pth".
     """
     checkpoint = torch.load(filename, map_location=agent.device)
     agent.actor.load_state_dict(checkpoint['actor_state_dict'])

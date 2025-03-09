@@ -1,15 +1,15 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-
+from dotenv import load_dotenv
 import os
-# Changed the observation space to include the seasonality factor
-NUM_EPISODES = 5 
-NUM_STEPS = 24  * 365 
-INITIAL_SOC = 5
-RENEWABLE_SCALE = 25
-DEMAND_NOT_MET_FACTOR = 1.3
-BATTERY_CAPACITY = 30
+load_dotenv()
+NUM_EPISODES = int(os.getenv('NUM_EPISODES', 10))
+NUM_STEPS = int(os.getenv('NUM_STEPS', 8760))
+INITIAL_SOC = float(os.getenv('INITIAL_SOC'))
+RENEWABLE_SCALE = float(os.getenv('RENEWABLE_SCALE'),25.0)
+DEMAND_NOT_MET_FACTOR = float(os.getenv('DEMAND_NOT_MET_FACTOR', 1.3))
+BATTERY_CAPACITY = float(os.getenv('BATTERY_CAPACITY', 30.0))
 
 class ElectricityMarketEnv(gym.Env):
     metadata = {"render.modes": ["human"]}

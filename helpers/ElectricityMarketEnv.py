@@ -7,7 +7,7 @@ load_dotenv()
 NUM_EPISODES = int(os.getenv('NUM_EPISODES', 10))
 NUM_STEPS = int(os.getenv('NUM_STEPS', 8760))
 INITIAL_SOC = float(os.getenv('INITIAL_SOC'))
-RENEWABLE_SCALE = float(os.getenv('RENEWABLE_SCALE'),25.0)
+RENEWABLE_SCALE = float(os.getenv('RENEWABLE_SCALE', 25.0))
 DEMAND_NOT_MET_FACTOR = float(os.getenv('DEMAND_NOT_MET_FACTOR', 1.3))
 BATTERY_CAPACITY = float(os.getenv('BATTERY_CAPACITY', 30.0))
 

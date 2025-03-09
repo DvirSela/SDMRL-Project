@@ -27,17 +27,18 @@ Each following sections should be run in the order we describe. The running is s
 ## Training
 This is the main part of the code, which will train the SAC and TAC agents. The releavant Hyper-Parameters in the `.env` are:
 ```python
-
-TRAIN_TIME_STEPS - The number of training steps the models will do each episode.
+TRAIN_TIME_STEPS - int. The number of training steps the models will do each episode.
+NUM_EPISODES - int. number of episodes to rnu the training.
+TRAIN - bool. decides if to overwrite or not when training (if not, will just load)
+INITIAL_SOC - float. inital state_of_charge
+BATTERY_CAPACITY - float. decides the battery_capacity
+RENEWABLE_SCALE - flaot. decides the scale at which the agent get renewable enerygt. higher is more.
+DEMAND_NOT_MET_FACTOR - float. how much to punish when not meeting the demand. Higher factor means lower punishment.
+HISTORY_LENGTH - int. Only relevant for the TAC. Decides the length the saved history
+TAC_BATCH_SIZE - int. Only relevant for the TAC. Decides the batch size
+REPLAY_BUFFER_CAPACITY - int. Only relevant for the TAC. Decides the replay buffer capacity.
 ```
-The parameters are:
-- `N` - number of samples
-- `seed` - seed for randmoness
-- `k` - number of users to get for each job listing
-- `show_null` - bool, will determine if to show null checks or skip
-- `save_to_dbfs` - bool, will determine if to save results to dbfs
-- `index_model` - the index of the chosen model in the model list
-- `models_list` - list of models to use for the embeddings
+In order to train the models, just run [train_SAC.py](train_SAC.py) for the SAC and [train_TAC.py](train_TAC.py) for the TAC.
 ## Evaluating
 This is the part of the code that runs the evaluations and visualiztions.
 - The notebook for plotting the T-SNE is [TSNE.ipynb](Databricks%20Code/TSNE.ipynb)

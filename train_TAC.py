@@ -156,7 +156,7 @@ class TACAgent:
         self.target_critic_encoder2.load_state_dict(self.critic_encoder2.state_dict())
         self.target_critic2.load_state_dict(self.critic2.state_dict())
         
-        # Optimizers.
+
         self.actor_optimizer = optim.Adam(self.actor.parameters(), lr=actor_lr)
         self.critic_optimizer = optim.Adam(
             list(self.critic1.parameters()) + list(self.critic2.parameters()) +

@@ -367,6 +367,58 @@ def load_model(agent, filename="tac_agent.pth"):
     agent.log_alpha.data.copy_(checkpoint['log_alpha'].data)
     print(f"Model loaded from {filename}")
 
+def evaluate(agent, num_episodes=5, max_steps=24*365):
+    """
+    Evaluate the current agent on the environment for a given number of episodes.
+    Uses the deterministic policy (mean action) for evaluation.
+    """
+
+    episodes = {
+    'rewards': [],
+    'battery_used_in_demand': [],
+    'sold': [],
+    'penalty': [] 
+    }
+
+
+    per_episode = {
+        'rewards': [],
+        'battery_used_in_demand': [],
+        'sold': [],
+        'penalty': [] 
+    }
+    for episode in tqdm(range(num_episodes)):
+        env = ElectricityMarketEnv()
+        obs, _ = env.reset()
+        state = flatten_state(obs)
+        rewards = []
+        # Initialize the state history with the initial state.
+        state_history = deque([state.copy() for _ in range(agent.history_length)], maxlen=agent.history_length)
+        episode_reward = 0
+        for step in range(max_steps):
+            # Prepare the state sequence.
+            state_seq = np.array(state_history)
+            # Use evaluate=True to select the mean action.
+            action = agent.select_action(state_seq, evaluate=True)
+            next_obs, reward, done, truncated, info = env.step(action)
+            for key in episodes.keys():
+                to_append = info[key]
+                if isinstance(to_append, np.ndarray):
+                    to_append = to_append[0]
+                per_episode[key].append(to_append)
+            next_state = flatten_state(next_obs)
+            state_history.append(next_state)
+            episode_reward += reward
+            if done:
+                break
+        # print(f"Evaluation Episode {episode}: Reward = {episode_reward}")
+        for key in episodes.keys():
+            episodes[key].append(per_episode[key])
+            per_episode[key] = []
+        rewards.append(episode_reward)
+    avg_reward = sum(rewards) / len(rewards)
+    print(f"Average Evaluation Reward: {avg_reward}")
+    return episodes['rewards'], episodes['battery_used_in_demand'], episodes['sold'], episodes['penalty']
 if __name__ == "__main__":
     print(f'device: {device}')
     train()

@@ -26,10 +26,9 @@ Flatten the state dictionary into a single array.
     keys = ['soc', 'demand', 'price', 'renewable', 'season', 'time']
     return np.concatenate([state[key].flatten() for key in keys], axis=-1)
 
-# --- Replay Buffer that stores sequences ---
 class ReplayBuffer:
     """
-    A simple FIFO experience replay buffer for storing sequences of states.
+    A simple replay buffer for storing sequences of states.
     """
     def __init__(self, capacity, history_length, state_dim):
         self.capacity = capacity
@@ -66,25 +65,19 @@ class ReplayBuffer:
 class TransformerStateEncoder(nn.Module):
     def __init__(self, input_dim, d_model, history_length, nhead, num_layers, dropout=0.1):
         super(TransformerStateEncoder, self).__init__()
-        # Project the raw state vector to d_model dimensions.
         self.input_proj = nn.Linear(input_dim, d_model)
-        # Learnable positional embeddings for the sequence.
         self.pos_embedding = nn.Parameter(torch.zeros(1, history_length, d_model))
         encoder_layer = nn.TransformerEncoderLayer(d_model=d_model, nhead=nhead, dropout=dropout)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
     
     def forward(self, x):
-        # x shape: (batch, seq_len, input_dim)
-        x = self.input_proj(x)  # -> (batch, seq_len, d_model)
-        x = x + self.pos_embedding  # add positional encoding
-        # Transformer expects shape: (seq_len, batch, d_model)
+        x = self.input_proj(x)
+        x = x + self.pos_embedding
         x = x.transpose(0, 1)
-        encoded = self.transformer_encoder(x)  # -> (seq_len, batch, d_model)
-        # We take the output of the final token as the state representation.
-        encoded = encoded[-1]  # shape: (batch, d_model)
+        encoded = self.transformer_encoder(x)
+        encoded = encoded[-1]
         return encoded
 
-# --- Actor Network ---
 class Actor(nn.Module):
     def __init__(self, state_encoder, d_model, action_dim, hidden_dim=256):
         super(Actor, self).__init__()
@@ -95,21 +88,17 @@ class Actor(nn.Module):
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU()
         )
-        # Output mean and log_std for the Gaussian policy.
         self.mean = nn.Linear(hidden_dim, action_dim)
         self.log_std = nn.Linear(hidden_dim, action_dim)
     
     def forward(self, state_seq):
-        # state_seq shape: (batch, seq_len, input_dim)
         encoded = self.state_encoder(state_seq)
         x = self.fc(encoded)
         mean = self.mean(x)
         log_std = self.log_std(x)
-        # Clamp for numerical stability.
         log_std = torch.clamp(log_std, -20, 2)
         return mean, log_std
 
-# --- Critic (Q-Network) ---
 class QNetwork(nn.Module):
     def __init__(self, state_encoder, d_model, action_dim, hidden_dim=256):
         super(QNetwork, self).__init__()
@@ -123,7 +112,6 @@ class QNetwork(nn.Module):
         )
     
     def forward(self, state_seq, action):
-        # state_seq: (batch, seq_len, input_dim); action: (batch, action_dim)
         encoded = self.state_encoder(state_seq)
         x = torch.cat([encoded, action], dim=-1)
         q_value = self.fc(x)
@@ -194,13 +182,13 @@ class SACAgent:
 
     def update(self, replay_buffer, batch_size):
         state_seqs, actions, rewards, next_state_seqs, dones = replay_buffer.sample(batch_size)
-        state_seqs = torch.FloatTensor(state_seqs).to(self.device)       # (B, L, state_dim)
-        actions = torch.FloatTensor(actions).to(self.device)             # (B, action_dim)
-        rewards = torch.FloatTensor(rewards).unsqueeze(1).to(self.device)  # (B, 1)
+        state_seqs = torch.FloatTensor(state_seqs).to(self.device)
+        actions = torch.FloatTensor(actions).to(self.device)
+        rewards = torch.FloatTensor(rewards).unsqueeze(1).to(self.device)
         next_state_seqs = torch.FloatTensor(next_state_seqs).to(self.device)
         dones = torch.FloatTensor(dones).unsqueeze(1).to(self.device)
 
-        # ----- Critic update -----
+        # Critic update
         with torch.no_grad():
             next_mean, next_log_std = self.actor(next_state_seqs)
             next_std = next_log_std.exp()
@@ -223,7 +211,7 @@ class SACAgent:
         critic_loss.backward()
         self.critic_optimizer.step()
         
-        # ----- Actor update -----
+        # Actor update
         mean, log_std = self.actor(state_seqs)
         std = log_std.exp()
         normal = torch.distributions.Normal(mean, std)
@@ -242,13 +230,13 @@ class SACAgent:
         actor_loss.backward()
         self.actor_optimizer.step()
         
-        # ----- Temperature (alpha) update -----
+        # Temperature (alpha) update
         alpha_loss = -(self.log_alpha.exp() * (log_prob + self.target_entropy).detach()).mean()
         self.alpha_optimizer.zero_grad()
         alpha_loss.backward()
         self.alpha_optimizer.step()
         
-        # ----- Soft update of target networks -----
+        # Soft update of target networks
         self.soft_update(self.critic1, self.target_critic1, self.critic_encoder1, self.target_critic_encoder1)
         self.soft_update(self.critic2, self.target_critic2, self.critic_encoder2, self.target_critic_encoder2)
         

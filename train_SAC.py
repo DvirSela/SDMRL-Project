@@ -4,9 +4,10 @@ from stable_baselines3.common.callbacks import BaseCallback
 from helpers.ElectricityMarketEnv import ElectricityMarketEnv
 import os
 from tqdm import tqdm
+from dotenv import load_dotenv
+load_dotenv()
 
-TRAIN = True
-
+TRAIN = bool(os.getenv('TRAIN', True))
 class TQDMCallback(BaseCallback):
     def __init__(self, total_timesteps, verbose=0):
         super().__init__(verbose)

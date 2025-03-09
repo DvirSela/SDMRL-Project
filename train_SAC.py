@@ -1,7 +1,7 @@
 from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
-from ElectricityMarketEnv import ElectricityMarketEnv
+from helpers.ElectricityMarketEnv import ElectricityMarketEnv
 import os
 from tqdm import tqdm
 

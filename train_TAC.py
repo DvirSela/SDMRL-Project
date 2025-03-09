@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import gymnasium as gym
 from collections import deque
 import random
-from ElectricityMarketEnv import ElectricityMarketEnv
+from helpers.ElectricityMarketEnv import ElectricityMarketEnv
 import pickle
 from dotenv import load_dotenv
 import os

@@ -26,18 +26,17 @@ Each following sections should be run in the order we describe. The running is s
 
 ## Training
 This is the main part of the code, which will train the SAC and TAC agents. The releavant Hyper-Parameters in the `.env` are:
-```python
-TRAIN_TIME_STEPS - int. The number of training steps the models will do each episode.
-NUM_EPISODES - int. number of episodes to rnu the training.
-TRAIN - bool. decides if to overwrite or not when training (if not, will just load)
-INITIAL_SOC - float. inital state_of_charge
-BATTERY_CAPACITY - float. decides the battery_capacity
-RENEWABLE_SCALE - flaot. decides the scale at which the agent get renewable enerygt. higher is more.
-DEMAND_NOT_MET_FACTOR - float. how much to punish when not meeting the demand. Higher factor means lower punishment.
-HISTORY_LENGTH - int. Only relevant for the TAC. Decides the length the saved history
-TAC_BATCH_SIZE - int. Only relevant for the TAC. Decides the batch size
-REPLAY_BUFFER_CAPACITY - int. Only relevant for the TAC. Decides the replay buffer capacity.
-```
+- `TRAIN_TIME_STEPS` - int, number of training steps the models will perform in each episode.  
+- `NUM_EPISODES` - int, number of episodes to run during training.  
+- `TRAIN` - bool, determines whether to overwrite existing training data or just load from previous runs.  
+- `INITIAL_SOC` - float, initial state of charge for the battery.  
+- `BATTERY_CAPACITY` - float, defines the total battery capacity.  
+- `RENEWABLE_SCALE` - float, controls the scale at which the agent receives renewable energy; higher values mean more energy.  
+- `DEMAND_NOT_MET_FACTOR` - float, penalty factor for unmet demand; higher values result in lower punishment.  
+- `HISTORY_LENGTH` - int, only relevant for TAC, defines the length of saved history.  
+- `TAC_BATCH_SIZE` - int, only relevant for TAC, determines the batch size used in training.  
+- `REPLAY_BUFFER_CAPACITY` - int, only relevant for TAC, sets the capacity of the replay buffer.  
+
 In order to train the models, just run [train_SAC.py](train_SAC.py) for the SAC and [train_TAC.py](train_TAC.py) for the TAC.
 ## Evaluating
 This is the part of the code that runs the evaluations and visualiztions.

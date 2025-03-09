@@ -285,6 +285,8 @@ def train():
     # Initialize SAC agent.
     agent = SACAgent(state_dim, action_dim, history_length, device=device)
     reward_per_episode = dict()
+    if not os.path.exists(f"./models/steps_{max_steps}"):
+        os.makedirs(f"./models/steps_{max_steps}")
     for episode in range(num_episodes):
         obs, _ = env.reset()
         state = flatten_state(obs)
@@ -322,11 +324,11 @@ def train():
         print(f"Episode: {episode}, Reward: {episode_reward}")
         reward_per_episode[episode] = episode_reward
         # Save the model every episode.
-        save_model(agent, filename=f"./steps_{max_steps}/sac_agent_episode_{episode}.pth")
+        save_model(agent, filename=f"./models/steps_{max_steps}/sac_agent_episode_{episode}.pth")
         with open(f"./steps_{max_steps}/reward_per_episode.pkl", "wb") as f:
             pickle.dump(reward_per_episode, f)
     # Save the final model.
-    save_model(agent, filename=f"./steps_{max_steps}/sac_agent_final.pth")
+    save_model(agent, filename=f"./models/steps_{max_steps}/sac_agent_final.pth")
 def save_model(agent, filename="sac_agent.pth"):
     """
     Save the model parameters to a file.

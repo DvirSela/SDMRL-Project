@@ -7,6 +7,7 @@ import gymnasium as gym
 from collections import deque
 import random
 from ElectricityMarketEnv import ElectricityMarketEnv
+import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def flatten_state(state):
@@ -262,15 +263,15 @@ def train():
     Train the SAC agent on the ElectricityMarketEnv environment.
     """
     # Hyperparameters.
-    num_episodes = 10         # total training episodes
-    max_steps = 8760         # steps per episode (as in your environment)
+    num_episodes = 10        # total training episodes
+    max_steps = 1000         # steps per episode (as in your environment)
     history_length = 10          # length of the state history fed into the transformer
     batch_size = 64 # batch size for training
     replay_buffer_capacity = 100000
     state_dim = 6                 # flattened state dimension (soc, demand, price, renewable, season, time)
     action_dim = 1
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+    print(f"model will be saved at ./steps_{max_steps}/sac_agent_final.pth")
     # Create your custom environment (make sure ElectricityMarketEnv is imported/defined).
     env = ElectricityMarketEnv()
     
@@ -279,7 +280,7 @@ def train():
     
     # Initialize SAC agent.
     agent = SACAgent(state_dim, action_dim, history_length, device=device)
-    
+    reward_per_episode = dict()
     for episode in range(num_episodes):
         obs, _ = env.reset()
         state = flatten_state(obs)
@@ -315,10 +316,13 @@ def train():
                 break
         
         print(f"Episode: {episode}, Reward: {episode_reward}")
+        reward_per_episode[episode] = episode_reward
         # Save the model every episode.
         save_model(agent, filename=f"./steps_{max_steps}/sac_agent_episode_{episode}.pth")
+        with open(f"./steps_{max_steps}/reward_per_episode.pkl", "wb") as f:
+            pickle.dump(reward_per_episode, f)
     # Save the final model.
-    save_model(agent, filename="./steps_{max_steps}/sac_agent_final.pth")
+    save_model(agent, filename=f"./steps_{max_steps}/sac_agent_final.pth")
 def save_model(agent, filename="sac_agent.pth"):
     """
     Save the model parameters to a file.
